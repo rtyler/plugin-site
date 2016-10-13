@@ -1,6 +1,9 @@
 package io.jenkins.plugins.services;
 
 import io.jenkins.plugins.models.GeneratedPluginData;
+import org.apache.commons.cli.Option;
+
+import java.util.Optional;
 
 /**
  * <p>Get various configuration pieces for the application</p>
@@ -8,11 +11,11 @@ import io.jenkins.plugins.models.GeneratedPluginData;
 public interface ConfigurationService {
 
   /**
-   * <p>Get index data need to populating Elasticsearch</p>
+   * <p>Get plugin data needed to populate Elasticsearch</p>
    *
-   * @return GeneratedPluginData
+   * @return GeneratedPluginData - Present if new plugin data is ready, empty if it hasn't changed
    * @throws ServiceException in case something goes wrong
      */
-  GeneratedPluginData getIndexData() throws ServiceException;
+  Optional<GeneratedPluginData> getPluginData() throws ServiceException;
 
 }

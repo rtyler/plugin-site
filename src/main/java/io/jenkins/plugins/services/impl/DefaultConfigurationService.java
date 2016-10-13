@@ -10,12 +10,14 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -26,11 +28,17 @@ public class DefaultConfigurationService implements ConfigurationService {
 
   private final Logger logger = LoggerFactory.getLogger(DefaultConfigurationService.class);
 
+  private String lastEtag = null;
+
   @Override
-  public GeneratedPluginData getIndexData() throws ServiceException {
+  public Optional<GeneratedPluginData> getPluginData() throws ServiceException {
     final CloseableHttpClient httpClient = HttpClients.createDefault();
     try {
       final String url = getDataFileUrl();
+      if (!hasPluginDataFileChanged(httpClient, url)) {
+        logger.info("Plugin data file hasn't changed");
+        return Optional.empty();
+      }
       final HttpGet get = new HttpGet(url);
       final CloseableHttpResponse response = httpClient.execute(get);
       if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
@@ -39,20 +47,38 @@ public class DefaultConfigurationService implements ConfigurationService {
         final File dataFile = File.createTempFile("plugins", ".json.gzip");
         FileUtils.copyToFile(inputStream, dataFile);
         final String data = readGzipFile(dataFile);
-        return JsonObjectMapper.getObjectMapper().readValue(data, GeneratedPluginData.class);
+        final GeneratedPluginData generated = JsonObjectMapper.getObjectMapper().readValue(data, GeneratedPluginData.class);
+        lastEtag = response.getLastHeader("ETag").getValue();
+        logger.info(String.format("Using new ETag %s", lastEtag));
+        return Optional.of(generated);
       } else {
-        logger.error("Data file not found");
+        logger.error("Plugin data file not found");
         throw new RuntimeException("Data file not found");
       }
     } catch (Exception e) {
-      logger.error("Problem getting data file", e);
-      throw new ServiceException("Problem getting data file", e);
+      logger.error("Problem getting plugin data file", e);
+      throw new ServiceException("Problem getting plugin data file", e);
     } finally {
       try {
         httpClient.close();
       } catch (IOException e) {
         logger.warn("Problem closing HttpClient", e);
       }
+    }
+  }
+
+  private boolean hasPluginDataFileChanged(CloseableHttpClient httpClient, String url) {
+    if (lastEtag == null) {
+      return true;
+    }
+    final HttpHead head = new HttpHead(url);
+    head.addHeader("If-None-Match", lastEtag);
+    try {
+      final CloseableHttpResponse response = httpClient.execute(head);
+      return response.getStatusLine().getStatusCode() != HttpStatus.SC_NOT_MODIFIED;
+    } catch (Exception e) {
+      logger.error("Problem determining if plugin data file changed", e);
+      throw new ServiceException("Problem determining if plugin data file changed", e);
     }
   }
 
@@ -76,8 +102,8 @@ public class DefaultConfigurationService implements ConfigurationService {
     try(final BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)), "utf-8"))) {
       return reader.lines().collect(Collectors.joining());
     } catch (Exception e) {
-      logger.error("Problem decompressing plugin data", e);
-      throw new RuntimeException("Problem decompressing plugin data", e);
+      logger.error("Problem decompressing plugin data file", e);
+      throw new RuntimeException("Problem decompressing plugin data file", e);
     }
   }
 

@@ -71,7 +71,7 @@ public class EmbeddedElasticsearchServer {
     node = NodeBuilder.nodeBuilder().local(true).settings(settings).build();
     node.start();
     populateIndex();
-    scheduledExecutorService.scheduleWithFixedDelay(() -> populateIndex(), 12, 12, TimeUnit.HOURS);
+    scheduledExecutorService.scheduleWithFixedDelay(() -> populateIndex(), 10, 10, TimeUnit.MINUTES);
     logger.info("Initializing elasticsearch done");
   }
 
@@ -85,9 +85,9 @@ public class EmbeddedElasticsearchServer {
 
   private void populateIndex() {
     try {
-      final GeneratedPluginData data = configurationService.getIndexData();
+      final Optional<GeneratedPluginData> data = configurationService.getPluginData();
       if (shouldIndex(data)) {
-        doPopulateIndex(data);
+        doPopulateIndex(data.get());
       }
     } catch (Exception e) {
       logger.error("Problem populating index", e);
@@ -147,7 +147,12 @@ public class EmbeddedElasticsearchServer {
     }
   }
 
-  private boolean shouldIndex(GeneratedPluginData data) {
+  private boolean shouldIndex(Optional<GeneratedPluginData> optData) {
+    if (!optData.isPresent()) {
+      logger.info("Plugin data hasn't changed");
+      return false;
+    }
+    final GeneratedPluginData data = optData.get();
     final Optional<LocalDateTime> optCreatedAt = getCurrentCreatedAt();
     if (optCreatedAt.isPresent()) {
       final LocalDateTime createdAt = optCreatedAt.get();
