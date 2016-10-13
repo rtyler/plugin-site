@@ -4,12 +4,14 @@ node {
 
   stage('Generate Plugin Data') {
     withEnv(["PATH+MAVEN=${tool 'M3'}/bin"]) {
+      sh "mvn clean"
       sh "mvn -P generatePluginData"
     }
   }
 
   stage('Verify Plugin Data') {
     withEnv(["PATH+MAVEN=${tool 'M3'}/bin"]) {
+      sh "mvn clean"
       sh "mvn -P verifyPluginData"
     }
   }
