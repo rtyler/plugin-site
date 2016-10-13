@@ -1,6 +1,7 @@
 package io.jenkins.plugins;
 
 import io.jenkins.plugins.commons.JsonObjectMapper;
+import io.jenkins.plugins.commons.ModelVersion;
 import io.jenkins.plugins.models.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
@@ -255,7 +256,7 @@ public class GeneratePluginData {
   private void writePluginsToFile(List<Plugin> plugins) {
     final File data = Paths.get(System.getProperty("user.dir"), "target", "plugins.json.gzip").toFile();
     try(final Writer writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(data)), "utf-8"))) {
-      JsonObjectMapper.getObjectMapper().writeValue(writer, new GeneratedPluginData(plugins));
+      JsonObjectMapper.getObjectMapper().writeValue(writer, new GeneratedPluginData(plugins, ModelVersion.generateModelVersion()));
     } catch (Exception e) {
       logger.error("Problem writing plugin data to file", e);
       throw new RuntimeException(e);

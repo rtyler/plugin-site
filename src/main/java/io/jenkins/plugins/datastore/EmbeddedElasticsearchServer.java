@@ -1,6 +1,7 @@
 package io.jenkins.plugins.datastore;
 
 import io.jenkins.plugins.commons.JsonObjectMapper;
+import io.jenkins.plugins.commons.ModelVersion;
 import io.jenkins.plugins.models.GeneratedPluginData;
 import io.jenkins.plugins.services.ConfigurationService;
 import org.apache.commons.io.FileUtils;
@@ -85,7 +86,9 @@ public class EmbeddedElasticsearchServer {
   private void populateIndex() {
     try {
       final GeneratedPluginData data = configurationService.getIndexData();
-      doPopulateIndex(data);
+      if (shouldIndex(data)) {
+        doPopulateIndex(data);
+      }
     } catch (Exception e) {
       logger.error("Problem populating index", e);
       throw new RuntimeException("Problem populating index", e);
@@ -93,17 +96,6 @@ public class EmbeddedElasticsearchServer {
   }
 
   private void doPopulateIndex(GeneratedPluginData data) {
-    final Optional<LocalDateTime> optCreatedAt = getCurrentCreatedAt();
-    if (optCreatedAt.isPresent()) {
-      final LocalDateTime createdAt = optCreatedAt.get();
-      final LocalDateTime generatedCreatedAt = LocalDateTime.parse(TIMESTAMP_FORMATTER.format(data.getCreatedAt()), TIMESTAMP_FORMATTER);
-      logger.info("Current timestamp - " + createdAt);
-      logger.info("Data timestamp    - " + generatedCreatedAt);
-      if (createdAt.equals(generatedCreatedAt) || createdAt.isAfter(generatedCreatedAt)) {
-        logger.info("Plugin data is already up to date");
-        return;
-      }
-    }
     final ClassLoader cl = getClass().getClassLoader();
     final String index = String.format("%s%s", INDEX_PREFIX, TIMESTAMP_FORMATTER.format(data.getCreatedAt()));
     try {
@@ -153,6 +145,27 @@ public class EmbeddedElasticsearchServer {
       logger.error("Problem indexing", e);
       throw new RuntimeException("Problem indexing", e);
     }
+  }
+
+  private boolean shouldIndex(GeneratedPluginData data) {
+    final Optional<LocalDateTime> optCreatedAt = getCurrentCreatedAt();
+    if (optCreatedAt.isPresent()) {
+      final LocalDateTime createdAt = optCreatedAt.get();
+      final LocalDateTime generatedCreatedAt = LocalDateTime.parse(TIMESTAMP_FORMATTER.format(data.getCreatedAt()), TIMESTAMP_FORMATTER);
+      logger.info("Current timestamp - " + createdAt);
+      logger.info("Data timestamp    - " + generatedCreatedAt);
+      if (createdAt.equals(generatedCreatedAt) || createdAt.isAfter(generatedCreatedAt)) {
+        logger.info("Plugin data is already up to date");
+        return false;
+      }
+    }
+    // Null check is temporary. It's only here to ensure newer plugin data is generated with modelVersion populated.
+    // After a few days it should be removed after we know the data has modelVersion included.
+    if (data.getModelVersion() != null && !data.getModelVersion().equalsIgnoreCase(ModelVersion.generateModelVersion())) {
+      logger.warn("Model version of plugin data doesn't match running version");
+      return false;
+    }
+    return true;
   }
 
   private Optional<LocalDateTime> getCurrentCreatedAt() {

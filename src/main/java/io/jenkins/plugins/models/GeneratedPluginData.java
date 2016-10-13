@@ -23,12 +23,16 @@ public class GeneratedPluginData {
   @JsonDeserialize(using = LocalDateTimeDeserializer.class)
   private LocalDateTime createdAt;
 
+  @JsonProperty("modelVersion")
+  private String modelVersion;
+
   public GeneratedPluginData() {
   }
 
-  public GeneratedPluginData(List<Plugin> plugins) {
+  public GeneratedPluginData(List<Plugin> plugins, String modelVersion) {
     this.plugins = plugins;
     this.createdAt = LocalDateTime.now();
+    this.modelVersion = modelVersion;
   }
 
   public List<Plugin> getPlugins() {
@@ -47,4 +51,11 @@ public class GeneratedPluginData {
     this.createdAt = createdAt;
   }
 
+  public String getModelVersion() {
+    return modelVersion;
+  }
+
+  public void setModelVersion(String modelVersion) {
+    this.modelVersion = modelVersion;
+  }
 }

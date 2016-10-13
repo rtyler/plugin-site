@@ -1,0 +1,44 @@
+package io.jenkins.plugins.endpoints;
+
+import io.jenkins.plugins.commons.ModelVersion;
+import io.jenkins.plugins.models.Categories;
+import io.jenkins.plugins.services.DatastoreService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * <p>Endpoint for checking health of the application</p>
+ *
+ * <p>Used primarily for verifying the model version. The CI job that generates the plugins data
+ * will make this call to see what the running application has and compare with itself.</p>
+ */
+@Path("/health")
+@Produces(MediaType.APPLICATION_JSON)
+public class HealthEndpoint {
+
+  private Logger logger = LoggerFactory.getLogger(HealthEndpoint.class);
+
+  @GET
+  @Path("/model")
+  public Map<String, Object> getModelVersion() {
+    try {
+      final Map<String, Object> result = new HashMap<>();
+      result.put("version", ModelVersion.generateModelVersion());
+      return result;
+    } catch (Exception e) {
+      logger.error("Problem generating model version", e);
+      throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+}
