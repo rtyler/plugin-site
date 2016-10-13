@@ -13,4 +13,10 @@ node {
     }
   }
 
+  stage('Verify Plugin Data') {
+    withEnv(["PATH+MAVEN=${tool 'M3'}/bin"]) {
+      sh "mvn -P verifyPluginData"
+    }
+  }
+
 }

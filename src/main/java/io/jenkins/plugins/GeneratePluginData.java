@@ -4,15 +4,10 @@ import io.jenkins.plugins.commons.JsonObjectMapper;
 import io.jenkins.plugins.commons.ModelVersionGenerator;
 import io.jenkins.plugins.models.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -25,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,49 +59,10 @@ public class GeneratePluginData {
   }
 
   public void generate() {
-    if (!allowPluginGeneration()) {
-      throw new RuntimeException("Plugin generation isn't allowed");
-    }
     final JSONObject pluginsJson = getPlugins();
     final Path statisticsPath = downloadStatistics();
     final List<Plugin> plugins = generatePlugins(pluginsJson, statisticsPath);
     writePluginsToFile(plugins);
-  }
-
-  private boolean allowPluginGeneration() {
-    if (BooleanUtils.toBoolean(System.getenv().getOrDefault("FORCE", "false"))) {
-      logger.info("Forcing plugin data generation");
-      return true;
-    }
-    final String url = StringUtils.trimToNull(System.getenv().getOrDefault("REST_API_URL", null));
-    if (url == null) {
-      logger.warn("REST_API_URL is empty or not supplied. Not generating plugin data out of safety.");
-      return false;
-    }
-    final CloseableHttpClient httpClient = HttpClients.createDefault();
-    try {
-      final HttpGet get = new HttpGet(String.format("%s/health/model", url));
-      final CloseableHttpResponse response = httpClient.execute(get);
-      if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-        final HttpEntity entity = response.getEntity();
-        final InputStream inputStream = entity.getContent();
-        final String data = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-        final ModelVersion modelVersion = JsonObjectMapper.getObjectMapper().readValue(data, ModelVersion.class);
-        return modelVersion.getVersion().equalsIgnoreCase(ModelVersionGenerator.generateModelVersion());
-      } else {
-        logger.warn(String.format("Unable to communicate with API (%s). Not generating plugin data out of safety.", url));
-        return false;
-      }
-    } catch (Exception e) {
-      logger.error("Problem verifying model versions match", e);
-      return false;
-    } finally {
-      try {
-        httpClient.close();
-      } catch (IOException e) {
-        logger.error("Problem closing httpClient", e);
-      }
-    }
   }
 
   private JSONObject getPlugins() {
