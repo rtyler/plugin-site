@@ -3,20 +3,22 @@
 node {
 
   stage('Checkout') {
-    echo "Checking out branch ${env.BRANCH}"
-    git branch: '${BRANCH}'
+    checkout scm
+    mvn 'clean'
   }
 
   stage('Generate Plugin Data') {
-    withEnv(["PATH+MAVEN=${tool 'M3'}/bin"]) {
-      sh "mvn -P generatePluginData"
-    }
+    mvn '-P generatePluginData'
   }
 
   stage('Verify Plugin Data') {
-    withEnv(["PATH+MAVEN=${tool 'M3'}/bin"]) {
-      sh "mvn -P verifyPluginData"
-    }
+    mvn '-P verifyPluginData'
   }
 
+}
+
+def mvn(args) {
+  withEnv(["PATH+MAVEN=${tool 'M3'}/bin"]) {
+    sh "mvn ${args}"
+  }
 }
