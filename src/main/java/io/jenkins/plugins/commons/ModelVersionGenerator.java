@@ -9,11 +9,11 @@ import java.io.File;
 /**
  * <p>Utility for generating the model version</p>
  */
-public final class ModelVersion {
+public final class ModelVersionGenerator {
 
   public static String generateModelVersion() {
     try {
-      final ClassLoader cl = ModelVersion.class.getClassLoader();
+      final ClassLoader cl = ModelVersionGenerator.class.getClassLoader();
       final File mappingFile = new File(cl.getResource("elasticsearch/mappings/plugins.json").getFile());
       final String mappingContent = FileUtils.readFileToString(mappingFile, "utf-8");
       final String version = Version.CURRENT.toString();

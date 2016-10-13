@@ -1,7 +1,7 @@
 package io.jenkins.plugins.datastore;
 
 import io.jenkins.plugins.commons.JsonObjectMapper;
-import io.jenkins.plugins.commons.ModelVersion;
+import io.jenkins.plugins.commons.ModelVersionGenerator;
 import io.jenkins.plugins.models.GeneratedPluginData;
 import io.jenkins.plugins.services.ConfigurationService;
 import org.apache.commons.io.FileUtils;
@@ -166,7 +166,7 @@ public class EmbeddedElasticsearchServer {
     }
     // Null check is temporary. It's only here to ensure newer plugin data is generated with modelVersion populated.
     // After a few days it should be removed after we know the data has modelVersion included.
-    if (data.getModelVersion() != null && !data.getModelVersion().equalsIgnoreCase(ModelVersion.generateModelVersion())) {
+    if (data.getModelVersion() != null && !data.getModelVersion().equalsIgnoreCase(ModelVersionGenerator.generateModelVersion())) {
       logger.warn("Model version of plugin data doesn't match running version");
       return false;
     }

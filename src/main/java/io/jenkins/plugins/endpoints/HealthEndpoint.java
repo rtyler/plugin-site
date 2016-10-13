@@ -1,12 +1,10 @@
 package io.jenkins.plugins.endpoints;
 
-import io.jenkins.plugins.commons.ModelVersion;
-import io.jenkins.plugins.models.Categories;
-import io.jenkins.plugins.services.DatastoreService;
+import io.jenkins.plugins.commons.ModelVersionGenerator;
+import io.jenkins.plugins.models.ModelVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -30,11 +28,10 @@ public class HealthEndpoint {
 
   @GET
   @Path("/model")
-  public Map<String, Object> getModelVersion() {
+  public ModelVersion getModelVersion() {
     try {
-      final Map<String, Object> result = new HashMap<>();
-      result.put("version", ModelVersion.generateModelVersion());
-      return result;
+      final String version = ModelVersionGenerator.generateModelVersion();
+      return new ModelVersion(version);
     } catch (Exception e) {
       logger.error("Problem generating model version", e);
       throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
