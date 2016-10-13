@@ -67,10 +67,13 @@ public class VerifyPluginData {
         final HttpEntity entity = response.getEntity();
         final InputStream inputStream = entity.getContent();
         final String data = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-        final ModelVersion modelVersion = JsonObjectMapper.getObjectMapper().readValue(data, ModelVersion.class);
-        if (!modelVersion.getVersion().equalsIgnoreCase(ModelVersionGenerator.generateModelVersion())) {
-          logger.error("Model version on API doesn't match generated");
+        final ModelVersion apiModelVersion = JsonObjectMapper.getObjectMapper().readValue(data, ModelVersion.class);
+        final String generated = ModelVersionGenerator.generateModelVersion();
+        if (!apiModelVersion.getVersion().equalsIgnoreCase(generated)) {
+          logger.error(String.format("Model version on API (%s) doesn't match generated (%s)", apiModelVersion.getVersion(), generated));
           throw new RuntimeException("Model version on API doesn't match generated");
+        } else {
+          logger.info(String.format("Model version on API matches generated (%s)", generated));
         }
       } else {
         logger.error(String.format("Unable to communicate with API (%s). Not generating plugin data out of safety.", url));
