@@ -7,6 +7,7 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '7'))
         timestamps()
         timeout(time: 1, unit: 'HOURS')
+        disableConcurrentBuilds()
     }
     triggers {
         cron('H/10 * * * *')
